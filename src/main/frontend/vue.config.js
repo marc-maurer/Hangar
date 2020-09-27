@@ -18,11 +18,11 @@ module.exports = {
         config.entry('main').add(path.resolve(sourceDir, 'scss', 'main.scss'));
         // iterate thru entry points and add them to webpack
         for (const file of fs.readdirSync(entryDir)) {
-            config.entry(file.replace('.js', '')).add(path.resolve(entryDir, file));
+            config.entry(file.replace(/\.(js|ts)/, '')).add(path.resolve(entryDir, file));
         }
 
         for (const file of fs.readdirSync(jsDir)) {
-            config.entry(file.replace('.js', '')).add(path.resolve(jsDir, file));
+            config.entry(file.replace(/\.(js|ts)/, '')).add(path.resolve(jsDir, file));
         }
 
         config.module.rules.delete('css');

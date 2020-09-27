@@ -31,9 +31,9 @@
         </div>
         <div class="col-md-3">
             <select class="form-control select-sort" v-model="sort" @change="resetPage">
-                <option v-for="(option, index) in availableOptions.sort" :key="index" :value="option.id">{{
-                    option.name
-                }}</option>
+                <option v-for="(option, index) in availableOptions.sort" :key="index" :value="option.id"
+                    >{{ option.name }}
+                </option>
             </select>
 
             <div>
@@ -89,11 +89,13 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
+import { Options, Vue } from 'vue-class-component';
+
 import ProjectList from './components/ProjectList';
 import queryString from 'query-string';
 import { clearFromDefaults } from './utils';
-import { Category, Platform, SortOptions } from './enums';
+import { Category, CategoryType, Platform, SortOptions } from '@/enums.ts';
 import debounce from 'lodash/debounce';
 
 function defaultData() {
@@ -115,86 +117,115 @@ function defaultData() {
     };
 }
 
-export default {
+@Options({
     components: {
         ProjectList
     },
-    data: defaultData,
-    computed: {
-        isDefault: function() {
-            return Object.keys(clearFromDefaults(this.baseBinding, defaultData())).length === 0;
-        },
-        baseBinding: function() {
-            return {
-                q: this.q,
-                sort: this.sort,
-                relevance: this.relevance,
-                categories: this.categories,
-                tags: this.tags
-            };
-        },
-        listBinding: function() {
-            return clearFromDefaults(
-                Object.assign({}, this.baseBinding, {
-                    offset: (this.page - 1) * this.limit,
-                    limit: this.limit
-                }),
-                defaultData()
-            );
-        },
-        urlBinding: function() {
-            return clearFromDefaults(Object.assign({}, this.baseBinding, { page: this.page }), defaultData());
-        },
-        queryPlaceholder: function() {
-            return (
-                `Search in ${this.projectCount === null ? 'all' : this.projectCount} projects` +
-                `${!this.isDefault ? ' matching your filters' : ''}` +
-                ', proudly made by the community...'
-            );
+    name: 'Home'
+})
+export default class Home extends Vue {
+    q = '';
+    sort = 'updated';
+    relevance = true;
+    categories: Array<string> = [];
+    tags: Array<string> = [];
+    page = 1;
+    offset = 0;
+    limit = 25;
+    projectCount: number | null = null;
+    availableOptions = {
+        category: Category.values,
+        platform: Platform.values,
+        sort: SortOptions
+    };
+
+    data() {
+        return defaultData();
+    }
+
+    get isDefault() {
+        return Object.keys(clearFromDefaults(this.baseBinding, defaultData())).length === 0;
+    }
+
+    get baseBinding() {
+        return {
+            q: this.q,
+            sort: this.sort,
+            relevance: this.relevance,
+            categories: this.categories,
+            tags: this.tags
+        };
+    }
+
+    get listBinding() {
+        return clearFromDefaults(
+            Object.assign({}, this.baseBinding, {
+                offset: (this.page - 1) * this.limit,
+                limit: this.limit
+            }),
+            defaultData()
+        );
+    }
+
+    get urlBinding() {
+        return clearFromDefaults(Object.assign({}, this.baseBinding, { page: this.page }), defaultData());
+    }
+
+    get queryPlaceholder() {
+        return (
+            `Search in ${this.projectCount === null ? 'all' : this.projectCount} projects` +
+            `${!this.isDefault ? ' matching your filters' : ''}` +
+            ', proudly made by the community...'
+        );
+    }
+
+    reset() {
+        const self = this as { [key: string]: any };
+        Object.entries(defaultData()).forEach(([key, value]) => (self[key] = value));
+    }
+
+    resetPage() {
+        this.page = 1;
+    }
+
+    changeCategory(category: CategoryType) {
+        if (this.categories.includes(category.id)) {
+            this.categories.splice(this.categories.indexOf(category.id), 1);
+        } else if (this.categories.length + 1 === Category.values.length) {
+            this.categories = [];
+        } else {
+            this.categories.push(category.id);
         }
-    },
-    methods: {
-        reset: function() {
-            Object.entries(defaultData()).forEach(([key, value]) => (this.$data[key] = value));
-        },
-        resetPage: function() {
-            this.page = 1;
-        },
-        changeCategory: function(category) {
-            if (this.categories.includes(category.id)) {
-                this.categories.splice(this.categories.indexOf(category.id), 1);
-            } else if (this.categories.length + 1 === Category.values.length) {
-                this.categories = [];
-            } else {
-                this.categories.push(category.id);
-            }
-        },
-        updateQuery(newQuery) {
-            window.history.pushState(null, null, newQuery !== '' ? '?' + newQuery : '/');
-        },
-        updateData() {
-            Object.entries(
-                queryString.parse(location.search, {
-                    arrayFormat: 'bracket',
-                    parseBooleans: true
-                })
-            )
-                .filter(([key]) => Object.prototype.hasOwnProperty.call(defaultData(), key))
-                .forEach(([key, value]) => (this.$data[key] = value));
-        }
-    },
+    }
+
+    updateQuery(newQuery: string) {
+        window.history.pushState(null, '', newQuery !== '' ? '?' + newQuery : '/');
+    }
+
+    updateData() {
+        const self = this as { [key: string]: any };
+        Object.entries(
+            queryString.parse(location.search, {
+                arrayFormat: 'bracket',
+                parseBooleans: true
+            })
+        )
+            .filter(([key]) => Object.prototype.hasOwnProperty.call(defaultData(), key))
+            .forEach(([key, value]) => (self[key] = value));
+    }
+
     created() {
         this.updateData();
         window.addEventListener('popstate', this.updateData);
 
-        this.debouncedUpdateProps = debounce(this.updateQuery, 500);
+        const debouncedUpdateProps = debounce(this.updateQuery, 500);
         this.$watch(
             () => [this.q, this.sort, this.relevance, this.categories, this.tags, this.page].join(),
             () => {
                 const query = queryString.stringify(this.urlBinding, {
                     arrayFormat: 'bracket'
                 });
-                this.debouncedUpdateProps(query);
+                debouncedUpdateProps(query);
             }
         );
         this.$watch(
@@ -203,13 +234,15 @@ export default {
                 this.resetPage();
             }
         );
-    },
-    watch: {
-        page: function() {
-            window.scrollTo(0, 0);
-        }
+
+        this.$watch(
+            () => this.page,
+            () => {
+                window.scrollTo(0, 0);
+            }
+        );
     }
-};
+}
 </script>
 
 <style lang="scss" scoped>
@@ -218,13 +251,16 @@ export default {
 .select-sort {
     margin-bottom: 10px;
 }
+
 .category-reset {
     display: flex;
     cursor: pointer;
 }
+
 .list-group-item-action {
     padding: 10px 15px;
 }
+
 .category-list {
     a.list-group-item {
         svg {
@@ -245,16 +281,20 @@ export default {
         }
     }
 }
+
 .platform-list {
     .list-group-item {
         cursor: pointer;
     }
+
     .parent {
         font-weight: bold;
     }
 }
+
 .clearSelection {
     margin-bottom: 1rem;
+
     a {
         cursor: pointer;
         color: #586069;

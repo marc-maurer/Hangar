@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import $ from 'jquery';
-import Home from '../Home';
+import Home from '@/Home.vue';
 
-$.ajaxSetup(window.ajaxSettings);
+$.ajaxSetup(ajaxSettings);
 
 createApp(Home).mount('#home');

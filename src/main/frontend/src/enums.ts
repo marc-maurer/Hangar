@@ -1,5 +1,11 @@
+export interface CategoryType {
+    id: string;
+    name: string;
+    icon: string;
+}
+
 export class Category {
-    static get values() {
+    static get values(): Array<CategoryType> {
         return [
             { id: 'admin_tools', name: 'Admin Tools', icon: 'server' },
             { id: 'chat', name: 'Chat', icon: 'comment' },
@@ -14,7 +20,7 @@ export class Category {
         ];
     }
 
-    static fromId(id) {
+    static fromId(id: string): CategoryType {
         return this.values.filter(category => category.id === id)[0];
     }
 }
@@ -47,7 +53,7 @@ export class Platform {
         return this.values.map(platform => platform.id);
     }
 
-    static isPlatformTag(tag) {
+    static isPlatformTag(tag: any) {
         return this.keys.includes(tag.name);
     }
 }
@@ -74,7 +80,7 @@ export class Visibility {
         ];
     }
 
-    static fromName(name) {
+    static fromName(name: any) {
         return this.values.filter(visibility => visibility.name === name)[0];
     }
 }
