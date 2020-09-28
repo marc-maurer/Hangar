@@ -58,18 +58,18 @@
                                                     </a>
                                                 </span>
 
-                                                <span class="stat" title="Views"
-                                                    ><i class="fas fa-eye"></i>
-                                                    {{ formatStats(project.stats.views) }}</span
-                                                >
-                                                <span class="stat" title="Download"
-                                                    ><i class="fas fa-download"></i>
-                                                    {{ formatStats(project.stats.downloads) }}</span
-                                                >
-                                                <span class="stat" title="Stars"
-                                                    ><i class="fas fa-star"></i>
-                                                    {{ formatStats(project.stats.stars) }}</span
-                                                >
+                                                <span class="stat" title="Views">
+                                                    <i class="fas fa-eye"></i>
+                                                    {{ formatStats(project.stats.views) }}
+                                                </span>
+                                                <span class="stat" title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                    {{ formatStats(project.stats.downloads) }}
+                                                </span>
+                                                <span class="stat" title="Stars">
+                                                    <i class="fas fa-star"></i>
+                                                    {{ formatStats(project.stats.stars) }}
+                                                </span>
 
                                                 <span :title="categoryFromId(project.category).name" class="stat">
                                                     <i
@@ -115,64 +115,66 @@
     </div>
 </template>
 
-<script>
-import Tag from './Tag';
+<script lang="ts">
+import { Options, mixins, props } from 'vue-class-component';
+import { debounce } from 'lodash';
+
+const Props = props({
+    q: String,
+    categories: Array,
+    tags: Array,
+    owner: String,
+    sort: String,
+    relevance: {
+        type: Boolean,
+        default: true
+    },
+    limit: {
+        type: Number,
+        default: 25
+    },
+    offset: {
+        type: Number,
+        default: 0
+    }
+});
+
+import Tag from '@/components/Tag.vue';
 import { clearFromEmpty, numberWithCommas } from '@/utils';
 import { Category, Platform, Visibility } from '@/enums';
-import Pagination from './Pagination';
-import Icon from './Icon';
-import debounce from 'lodash/debounce';
+import Pagination from '@/components/Pagination.vue';
+import Icon from '@/components/Icon.vue';
 import { API } from '@/api';
 
-export default {
+@Options({
     components: {
         Tag,
         Pagination,
         Icon
     },
     emits: ['jump-to-page', 'next-page', 'prev-page', 'update:projectCount'],
-    props: {
-        q: String,
-        categories: {
-            type: Array
-        },
-        tags: Array,
-        owner: String,
-        sort: String,
-        relevance: {
-            type: Boolean,
-            default: true
-        },
-        limit: {
-            type: Number,
-            default: 25
-        },
-        offset: {
-            type: Number,
-            default: 0
-        }
-    },
-    data() {
-        return {
-            projects: [],
-            totalProjects: 0,
-            loading: true
-        };
-    },
-    computed: {
-        current: function() {
-            return Math.ceil(this.offset / this.limit) + 1;
-        },
-        total: function() {
-            return Math.ceil(this.totalProjects / this.limit);
-        },
-        routes: function() {
-            return window.jsRoutes.controllers.project;
-        }
-    },
-    created() {
+    name: 'ProjectList'
+})
+export default class ProjectList extends mixins(Props) {
+    projects: Array<unknown> = [];
+    totalProjects = 0;
+    loading = true;
+    debouncedUpdateProps = debounce(this.update, 500);
+
+    get current(): number {
+        return Math.ceil(this.offset / this.limit) + 1;
+    }
+
+    get total(): number {
+        return Math.ceil(this.totalProjects / this.limit);
+    }
+
+    get routes(): Record<string, unknown> {
+        return window['jsRoutes']['controllers']['project'];
+    }
+
+    created(): void {
         this.update();
-        this.debouncedUpdateProps = debounce(this.update, 500);
         this.$watch(
             () =>
                 [
@@ -189,59 +191,67 @@ export default {
                 this.debouncedUpdateProps();
             }
         );
-    },
-    methods: {
-        update() {
-            API.request('projects', 'GET', clearFromEmpty(this.$props)).then(response => {
-                this.projects = response.result;
-                this.totalProjects = response.pagination.count;
-                this.loading = false;
-                this.$emit('update:projectCount', this.totalProjects);
-            });
-        },
-        categoryFromId(id) {
-            return Category.fromId(id);
-        },
-        visibilityFromName(name) {
-            return Visibility.fromName(name);
-        },
-        tagsFromPromoted(promotedVersions) {
-            let tagsArray = [];
-            promotedVersions
-                .map(version => version.tags)
-                .forEach(tags => (tagsArray = tags.filter(tag => Platform.isPlatformTag(tag)).concat(tagsArray)));
-
-            const reducedTags = [];
-
-            Platform.values.forEach(platform => {
-                let versions = [];
-                tagsArray
-                    .filter(tag => tag.name === platform.id)
-                    .reverse()
-                    .forEach(tag => {
-                        versions.push(tag.display_data || tag.data);
-                    });
-
-                if (versions.length > 0) {
-                    reducedTags.push({
-                        name: platform.id,
-                        versions: versions,
-                        color: platform.color
-                    });
-                }
-            });
-
-            return reducedTags;
-        },
-        formatStats(number) {
-            return numberWithCommas(number);
-        }
     }
-};
+
+    update(): void {
+        API.request('projects', 'GET', clearFromEmpty(this.$props)).then(response => {
+            this.projects = response.result;
+            this.totalProjects = response.pagination.count;
+            this.loading = false;
+            this.$emit('update:projectCount', this.totalProjects);
+        });
+    }
+
+    categoryFromId(id: string): Category {
+        return Category.fromId(id);
+    }
+
+    visibilityFromName(name: string): Visibility {
+        return Visibility.fromName(name);
+    }
+
+    tagsFromPromoted(promotedVersions: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+        let tagsArray: Array<Record<string, unknown>> = [];
+        promotedVersions
+            .map(version => version.tags as Array<unknown>)
+            .forEach(
+                tags =>
+                    (tagsArray = tags.filter(tag => Platform.isPlatformTag(tag)).concat(tagsArray) as Array<
+                        Record<string, unknown>
+                    >)
+            );
+
+        const reducedTags: Array<Record<string, unknown>> = [];
+
+        Platform.values.forEach(platform => {
+            let versions: Array<unknown> = [];
+            tagsArray
+                .filter(tag => tag.name === platform.id)
+                .reverse()
+                .forEach(tag => {
+                    versions.push(tag.display_data || tag.data);
+                });
+
+            if (versions.length > 0) {
+                reducedTags.push({
+                    name: platform.id,
+                    versions: versions,
+                    color: platform.color
+                });
+            }
+        });
+
+        return reducedTags;
+    }
+
+    formatStats(number: number): string {
+        return numberWithCommas(number);
+    }
+}
 </script>
 
 <style lang="scss">
-@import './../scss/variables';
+@import 'src/scss/variables';
 
 .empty-project-list {
     display: flex;
@@ -251,6 +261,7 @@ export default {
         margin-left: 0.5rem;
     }
 }
+
 .project-list {
     margin-bottom: 0;
 

@@ -16,9 +16,9 @@
                 </span>
             </div>
             <div v-if="!isDefault" class="clearSelection">
-                <a @click="reset"
-                    ><i class="fa fa-window-close"></i> Clear current search query, categories, platform, and sort</a
-                >
+                <a @click="reset">
+                    <i class="fa fa-window-close"></i> Clear current search query, categories, platform, and sort
+                </a>
             </div>
             <project-list
                 v-bind="listBinding"
@@ -31,8 +31,8 @@
         </div>
         <div class="col-md-3">
             <select class="form-control select-sort" v-model="sort" @change="resetPage">
-                <option v-for="(option, index) in availableOptions.sort" :key="index" :value="option.id"
-                    >{{ option.name }}
+                <option v-for="(option, index) in availableOptions.sort" :key="index" :value="option.id">
+                    {{ option.name }}
                 </option>
             </select>
 
@@ -92,13 +92,13 @@
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
 
-import ProjectList from './components/ProjectList';
+import ProjectList from './components/ProjectList.vue';
 import queryString from 'query-string';
 import { clearFromDefaults } from './utils';
-import { Category, CategoryType, Platform, SortOptions } from '@/enums.ts';
+import { Category, Platform, SortOptions } from '@/enums.ts';
 import debounce from 'lodash/debounce';
 
-function defaultData() {
+function defaultData(): Record<string, unknown> {
     return {
         q: '',
         sort: 'updated',
@@ -139,15 +139,15 @@ export default class Home extends Vue {
         sort: SortOptions
     };
 
-    data() {
+    data(): Record<string, unknown> {
         return defaultData();
     }
 
-    get isDefault() {
+    get isDefault(): boolean {
         return Object.keys(clearFromDefaults(this.baseBinding, defaultData())).length === 0;
     }
 
-    get baseBinding() {
+    get baseBinding(): Record<string, unknown> {
         return {
             q: this.q,
             sort: this.sort,
@@ -179,16 +179,16 @@ export default class Home extends Vue {
         );
     }
 
-    reset() {
+    reset(): void {
         const self = this as { [key: string]: any };
         Object.entries(defaultData()).forEach(([key, value]) => (self[key] = value));
     }
 
-    resetPage() {
+    resetPage(): void {
         this.page = 1;
     }
 
-    changeCategory(category: CategoryType) {
+    changeCategory(category: Category): void {
         if (this.categories.includes(category.id)) {
             this.categories.splice(this.categories.indexOf(category.id), 1);
         } else if (this.categories.length + 1 === Category.values.length) {
@@ -198,11 +198,11 @@ export default class Home extends Vue {
         }
     }
 
-    updateQuery(newQuery: string) {
+    updateQuery(newQuery: string): void {
         window.history.pushState(null, '', newQuery !== '' ? '?' + newQuery : '/');
     }
 
-    updateData() {
+    updateData(): void {
         const self = this as { [key: string]: any };
         Object.entries(
             queryString.parse(location.search, {
@@ -214,7 +214,7 @@ export default class Home extends Vue {
             .forEach(([key, value]) => (self[key] = value));
     }
 
-    created() {
+    created(): void {
         this.updateData();
         window.addEventListener('popstate', this.updateData);
 

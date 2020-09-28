@@ -1,26 +1,30 @@
-export interface CategoryType {
+export class Category {
     id: string;
     name: string;
     icon: string;
-}
 
-export class Category {
-    static get values(): Array<CategoryType> {
+    constructor(id: string, name: string, icon: string) {
+        this.id = id;
+        this.name = name;
+        this.icon = icon;
+    }
+
+    static get values(): Array<Category> {
         return [
-            { id: 'admin_tools', name: 'Admin Tools', icon: 'server' },
-            { id: 'chat', name: 'Chat', icon: 'comment' },
-            { id: 'dev_tools', name: 'Developer Tools', icon: 'wrench' },
-            { id: 'economy', name: 'Economy', icon: 'money-bill-alt' },
-            { id: 'gameplay', name: 'Gameplay', icon: 'puzzle-piece' },
-            { id: 'games', name: 'Games', icon: 'gamepad' },
-            { id: 'protection', name: 'Protection', icon: 'lock' },
-            { id: 'role_playing', name: 'Role Playing', icon: 'magic' },
-            { id: 'world_management', name: 'World Management', icon: 'globe' },
-            { id: 'misc', name: 'Miscellaneous', icon: 'asterisk' }
+            new Category('admin_tools', 'Admin Tools', 'server'),
+            new Category('chat', 'Chat', 'comment'),
+            new Category('dev_tools', 'Developer Tools', 'wrench'),
+            new Category('economy', 'Economy', 'money-bill-alt'),
+            new Category('gameplay', 'Gameplay', 'puzzle-piece'),
+            new Category('games', 'Games', 'gamepad'),
+            new Category('protection', 'Protection', 'lock'),
+            new Category('role_playing', 'Role Playing', 'magic'),
+            new Category('world_management', 'World Management', 'globe'),
+            new Category('misc', 'Miscellaneous', 'asterisk')
         ];
     }
 
-    static fromId(id: string): CategoryType {
+    static fromId(id: string): Category {
         return this.values.filter(category => category.id === id)[0];
     }
 }
@@ -70,17 +74,25 @@ export const SortOptions = [
 ];
 
 export class Visibility {
-    static get values() {
+    name: string;
+    class: string;
+
+    constructor(name: string, clazz: string) {
+        this.name = name;
+        this.class = clazz;
+    }
+
+    static get values(): Array<Visibility> {
         return [
-            { name: 'public', class: '' },
-            { name: 'new', class: 'project-new' },
-            { name: 'needsChanges', class: 'striped project-needsChanges' },
-            { name: 'needsApproval', class: 'striped project-needsChanges' },
-            { name: 'softDelete', class: 'striped project-hidden' }
+            new Visibility('public', ''),
+            new Visibility('new', 'project-new'),
+            new Visibility('needsChanges', 'striped project-needsChanges'),
+            new Visibility('needsApproval', 'striped project-needsChanges'),
+            new Visibility('softDelete', 'striped project-hidden')
         ];
     }
 
-    static fromName(name: any) {
+    static fromName(name: string): Visibility {
         return this.values.filter(visibility => visibility.name === name)[0];
     }
 }
